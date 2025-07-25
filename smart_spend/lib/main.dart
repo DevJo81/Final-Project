@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_paystack/flutter_paystack.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'screens/savings_screen.dart';
@@ -9,6 +10,10 @@ import 'classes/settings_screen.dart';
 // ignore: unused_import
 import 'screens/bottom_nav.dart';
 import 'screens/home_screen.dart';
+import 'screens/transactions_screen.dart';
+import 'screens/login_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +21,10 @@ void main() async {
     url: 'https://gcqeaexzkkjrtyynyolc.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjcWVhZXh6a2tqcnR5eW55b2xjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjQ5OTMsImV4cCI6MjA2Nzc0MDk5M30.KdMJJAVZhE64jU8AUbq8ETQzL6QkKYcdtMn76bNUrmU',
   );
+  if (!kIsWeb) {
+    final plugin = PaystackPlugin();
+    await plugin.initialize(publicKey: 'pk_test_9850c7bcd834050484d07672404524e38e645f9b');
+  }
   runApp(const SmartSpendApp());
 }
 
@@ -35,6 +44,10 @@ class SmartSpendApp extends StatelessWidget {
   }
 }
 
+final GlobalKey<SettingsScreenState> settingsKey = GlobalKey<SettingsScreenState>();
+
+
+
 final _router = GoRouter(
   initialLocation: '/home',
   routes: [
@@ -48,7 +61,10 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/savings',
-      builder: (context, state) => const SavingsScreen(),
+      builder: (context, state) {
+        final isPremium = settingsKey.currentState?.isPremium ?? false;
+        return SavingsScreen(isPremium: isPremium);
+      },
     ),
     GoRoute(
       path: '/tips',
@@ -56,7 +72,10 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/budget',
-      builder: (context, state) => const BudgetScreen(),
+      builder: (context, state) {
+        final isPremium = settingsKey.currentState?.isPremium ?? false;
+        return BudgetScreen(isPremium: isPremium);
+      },
     ),
     GoRoute(
       path: '/insights',
@@ -64,7 +83,11 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
+      builder: (context, state) => SettingsScreen(key: settingsKey),
+    ),
+    GoRoute(
+      path: '/transactions',
+      builder: (context, state) => const TransactionsScreen(),
     ),
   ],
   redirect: (context, state) {
@@ -76,147 +99,3 @@ final _router = GoRouter(
     return null;
   },
 );
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
-  String? _error;
-  bool _obscurePassword = true;
-
-  Future<void> _signIn() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final response = await Supabase.instance.client.auth.signInWithPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-      if (response.session != null) {
-        if (mounted) context.go('/home');
-      } else {
-        setState(() {
-          _error = 'Invalid credentials.';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _signUp() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final response = await Supabase.instance.client.auth.signUp(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-      final user = response.user;
-      if (user != null) {
-        // Insert profile row with name
-        await Supabase.instance.client.from('profiles').insert({
-          'id': user.id,
-          'email': _emailController.text,
-          'name': _nameController.text,
-        });
-        setState(() {
-          _error = 'Check your email for confirmation.';
-        });
-      } else {
-        setState(() {
-          _error = 'Sign up failed.';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: _obscurePassword,
-              ),
-              const SizedBox(height: 24),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
-                ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _signIn,
-                    child: _isLoading
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Sign In'),
-                  ),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _signUp,
-                    child: const Text('Sign Up'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

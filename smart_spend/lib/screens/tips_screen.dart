@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'bottom_nav.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TipsScreen extends StatefulWidget {
   const TipsScreen({super.key});
@@ -34,6 +35,29 @@ class _TipsScreenState extends State<TipsScreen> {
   };
 
   final Set<String> _favorites = {};
+  static const String _favoritesKey = 'favorited_tips';
+  bool _favoritesLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favList = prefs.getStringList(_favoritesKey) ?? [];
+    setState(() {
+      _favorites.clear();
+      _favorites.addAll(favList);
+      _favoritesLoaded = true;
+    });
+  }
+
+  Future<void> _saveFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_favoritesKey, _favorites.toList());
+  }
 
   int get _selectedIndex => 3;
   void _onNavTap(int index) {
@@ -43,6 +67,9 @@ class _TipsScreenState extends State<TipsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_favoritesLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
     // Create an 'All' tab that combines all tips (removing duplicates)
     final allTips = <String>{};
     tipsByTopic.values.forEach(allTips.addAll);
@@ -104,6 +131,7 @@ class _TipsScreenState extends State<TipsScreen> {
         _favorites.add(tip);
       }
     });
+    _saveFavorites();
   }
 }
 
