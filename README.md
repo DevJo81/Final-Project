@@ -6,15 +6,16 @@ Welcome to **Smart Spend** – your personal finance companion, designed especia
 Smart Spend helps students take control of their finances with ease. Track your spending, set savings goals, get personalized insights, and learn financial tips – all in one beautiful, easy-to-use app.
 
 ## ✨ Features
+- 🎨 **Splash Screen**: Beautiful animated welcome screen with app branding
 - 👛 **Dashboard**: See your balance, income, and expenses at a glance
 - 🏦 **Savings Goals**: Set and track your savings targets (free users: up to 5, premium: unlimited)
 - 📊 **Budgeting**: Create and manage budgets for different categories (free users: up to 5, premium: unlimited)
-- 💡 **Financial Tips**: Get smart advice tailored for students
+- 💡 **Financial Tips**: Get smart advice tailored for students with favorite functionality
 - 📈 **Insights**: Visualize your spending and saving trends
 - 🔐 **Authentication**: Secure login and sign-up with Supabase
-- ⚙️ **Settings**: Manage your profile and preferences
-- 💳 **Payments & Subscription**: Upgrade to Premium using Paystack (Android/iOS only)
-- 🌐 **Web/Mobile Support**: Payment features are only available on Android/iOS. On web, payment/upgrade is hidden for compatibility.
+- ⚙️ **Settings**: Manage your profile, preferences and premium subscriptions
+- 💳 **Payments & Subscription**: Upgrade to Premium using Paystack (5000 TSH/month)
+- 🌐 **Cross-Platform Support**: Works on web, Android, and iOS with platform-specific features
   
 ## 🌐 Live Demo & Pitch Deck
 - [Live Demo](https://smart-spend-c7a585.netlify.app/)
@@ -24,7 +25,6 @@ Smart Spend helps students take control of their finances with ease. Track your 
 - **Flutter** (cross-platform mobile & web app)
 - **Supabase** (authentication & backend)
 - **GoRouter** (navigation)
-- **Provider** (state management)
 - **Paystack** (mobile payments)
 - **shared_preferences** (local storage)
 - **flutter_local_notifications** (reminders)
@@ -35,10 +35,11 @@ smart_spend/
 ├── lib/
 │   ├── main.dart                # App entry point & routing
 │   ├── screens/                 # All main app screens
+        ├── splash_screen.dart   # Welcome splash screen
 │   │   ├── home_screen.dart     # Home/dashboard
 │   │   ├── savings_screen.dart  # Savings goals
 │   │   ├── budget_screen.dart   # Budgeting
-│   │   ├── tips_screen.dart     # Financial tips
+│   │   ├── tips_screen.dart     # Financial tips wih favorites
 │   │   ├── insights_screen.dart # Insights & analytics
 │   │   ├── bottom_nav.dart      # Bottom navigation bar
 │   ├── classes/
@@ -50,28 +51,58 @@ smart_spend/
 ## 💎 Premium Features
 - **Unlimited Budgets** (free users: 5 max)
 - **Unlimited Savings Goals** (free users: 5 max)
-- **Early Access to Features** (premium only)
-- **Upgrade via Paystack** (Android/iOS only)
+- **Advanced Analytics** & insights
+- **Priority Customer Support**
+- **Export Financial Reports**
+- **Custom Budget Alerts**
+- **Upgrade via Paystack** (5000 TSH/month)
+
+## 🌐 Platform-Specific Features
+
+### **Web Platform:**
+- ✅ **Demo Mode**: Test premium features without payment
+- ✅ **Enhanced Payment Dialog**: Beautiful UI explaining mobile app requirement
+- ✅ **App Store Links**: Direct links to download mobile app
+- ✅ **All Core Features**: Budgeting, savings, tips, insights
+- ❌ **Real Payments**: Not available (mobile app required)
+
+### **Mobile Platform (Android/iOS):**
+- ✅ **Full Payment Integration**: Real Paystack payments
+- ✅ **Push Notifications**: Budget alerts and reminders
+- ✅ **Native App Experience**: Better performance and UX
+- ✅ **All Premium Features**: Unlimited budgets and goals
 
 ## 🧑‍💻 Development & Testing
-- To test payments and premium features, run the app on Android/iOS (emulator or real device).
-- On web (local or Netlify), payment/upgrade is hidden and Paystack is not initialized.
-- Use Paystack test cards for payment testing:
-  - Card: `4084 0840 8408 4081`, any future expiry, any 3-digit CVV, PIN: `0000` or `1234`
- 
-## ⚠️ Notes
-- **Paystack and payment features are not available on web.**
-- If you want to test payments, use a mobile device or emulator.
-- If you update dependencies, you may need to patch `flutter_paystack` for Flutter 3.7+ compatibility (see code comments).
 
+### **Running the Project:**
+1. Clone the repository
+2. Run `flutter pub get`
+3. Run `flutter run` for mobile or `flutter run -d chrome` for web
+
+### **Testing Premium Features:**
+- **Web**: Use "Try Demo Mode" button in settings
+- **Mobile**: Use real Paystack test payments
+- **Test Cards**: `4084 0840 8408 4081`, any future expiry, any 3-digit CVV
 
 ## 🚀 Deployment
-- **Web:**
+
+ ### **Web Deployment:**
   1. Run `flutter build web`.
   2. Deploy the contents of `build/web` to Netlify (drag-and-drop or CLI).
-- **Mobile:**
-  - Build and deploy as a standard Flutter app (Android/iOS).
+  3. Configure custom domain (optional)
+     
+ ### **Mobile Deployment:**
+  1. **Android**: Build APK/AAB and upload to Google Play Console
+  2. **iOS**: Build and upload to App Store Connect
 
+## 🔧 Recent Updates
+
+- ✅ **Splash Screen**: Professional welcome experience
+- ✅ **Favorite Tips**: Persistent favorites with error handling
+- ✅ **Enhanced Web UX**: Better payment dialog and demo mode
+- ✅ **Cross-Platform Support**: Works on web, Android, and iOS
+- ✅ **Premium Gating**: Real limitations for free users
+- ✅ **Payment Integration**: Paystack integration for mobile
 
 ## 👥 Team Members
 - **Joan Francis** – Flutter Developer and Product Designer
