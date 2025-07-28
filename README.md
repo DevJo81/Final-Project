@@ -18,7 +18,7 @@ Smart Spend helps students take control of their finances with ease. Track your 
 - 🌐 **Cross-Platform Support**: Works on web, Android, and iOS with platform-specific features
   
 ## 🌐 Live Demo & Pitch Deck
-- [Live Demo](https://smart-spend-caccb4.netlify.app/)
+- [Live Demo](https://smart-spend-4a8e71.netlify.app/)
 - [Pitch Deck](https://www.canva.com/design/DAGoRO_1YTg/4dHndUmDcq7JHRx55GWkCg/edit?utm_content=DAGoRO_1YTg&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
 
 ## 🛠️ Tech Stack
