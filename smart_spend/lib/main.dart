@@ -13,6 +13,7 @@ import 'screens/home_screen.dart';
 import 'screens/transactions_screen.dart';
 import 'screens/login_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'screens/splash_screen.dart';
 
 
 void main() async {
@@ -49,8 +50,12 @@ final GlobalKey<SettingsScreenState> settingsKey = GlobalKey<SettingsScreenState
 
 
 final _router = GoRouter(
-  initialLocation: '/home',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
@@ -94,6 +99,12 @@ final _router = GoRouter(
     final session = Supabase.instance.client.auth.currentSession;
     final loggedIn = session != null;
     final loggingIn = state.uri.toString() == '/login';
+    final onSplash = state.uri.toString() == '/splash';
+    
+    // Always allow splash screen to show
+    if (onSplash) return null;
+    
+    // Handle other redirects
     if (!loggedIn && !loggingIn) return '/login';
     if (loggedIn && loggingIn) return '/home';
     return null;

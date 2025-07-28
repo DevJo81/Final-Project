@@ -53,12 +53,17 @@ class SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _initNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-    );
-    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    try {
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+      );
+      await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    } catch (e) {
+      // Ignore notification initialization errors on web
+      // print('Notification initialization error: $e');
+    }
   }
 
   Future<void> _loadNotificationPref() async {
@@ -74,29 +79,39 @@ class SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _scheduleSampleNotification() async {
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      0,
-      'Smart Spend Reminder',
-      'Check your budget and spending insights!',
-      tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10)),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'main_channel',
-          'Main Notifications',
-          channelDescription: 'General notifications',
-          importance: Importance.max,
-          priority: Priority.high,
+    try {
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        0,
+        'Smart Spend Reminder',
+        'Check your budget and spending insights!',
+        tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10)),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'main_channel',
+            'Main Notifications',
+            channelDescription: 'General notifications',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
         ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: null,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: null,
+      );
+    } catch (e) {
+      // Ignore notification scheduling errors on web
+      // print('Notification scheduling error: $e');
+    }
   }
 
   Future<void> _cancelAllNotifications() async {
-    await _flutterLocalNotificationsPlugin.cancelAll();
+    try {
+      await _flutterLocalNotificationsPlugin.cancelAll();
+    } catch (e) {
+      // Ignore notification errors on web or when plugin is not initialized
+      // print('Notification error: $e');
+    }
   }
 
   Future<void> _fetchProfile() async {
@@ -241,12 +256,19 @@ class SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _upgradePlan() async {
+    // Remove web restriction to allow payments on web
+    // if (kIsWeb) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text('Payments are only available on mobile devices.')),
+    //   );
+    //   return;
+    // }
+    
     if (kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payments are only available on mobile devices.')),
-      );
+      _showWebPaymentDialog();
       return;
     }
+    
     final selectedId = await _selectPaymentMethodDialog();
     if (selectedId == null) return;
 
@@ -285,7 +307,6 @@ class SettingsScreenState extends State<SettingsScreen> {
         'plan': 'Premium',
         'status': 'active',
         'started_at': DateTime.now().toUtc().toIso8601String(),
-        'paystack_reference': response.reference,
       });
 
       await _fetchActiveSubscription();
@@ -790,6 +811,245 @@ class SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _enableDemoMode() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    await Supabase.instance.client.from('subscriptions').insert({
+      'user_id': user.id,
+      'payment_method_id': null, // No real payment method for demo
+      'plan': 'Premium',
+      'status': 'active',
+      'started_at': DateTime.now().toUtc().toIso8601String(),
+    });
+
+    await _fetchActiveSubscription();
+
+    setState(() {
+      _plan = 'Premium';
+      _isPremium = true;
+    });
+
+    // ignore: use_build_context_synchronously
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Demo mode enabled!')),
+    );
+  }
+
+  void _disableDemoMode() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    // Cancel the demo subscription by finding subscriptions with null payment_method_id
+    final demoSubscriptions = await Supabase.instance.client
+        .from('subscriptions')
+        .select('id, payment_method_id')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+    if (demoSubscriptions.isNotEmpty) {
+      for (final subscription in demoSubscriptions) {
+        // Check if this is a demo subscription (payment_method_id is null)
+        if (subscription['payment_method_id'] == null) {
+          await Supabase.instance.client
+              .from('subscriptions')
+              .update({
+                'status': 'cancelled', 
+                'ended_at': DateTime.now().toUtc().toIso8601String()
+              })
+              .eq('id', subscription['id']);
+        }
+      }
+    }
+
+    await _fetchActiveSubscription();
+
+    setState(() {
+      _plan = 'Free Basic';
+      _isPremium = false;
+    });
+
+    // ignore: use_build_context_synchronously
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Demo mode disabled!')),
+    );
+  }
+
+  void _showWebPaymentDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upgrade to Premium'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Premium Features:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('• Unlimited savings goals'),
+              const Text('• Unlimited budget categories'),
+              const Text('• Advanced analytics & insights'),
+              const Text('• Priority customer support'),
+              const Text('• Export financial reports'),
+              const Text('• Custom budget alerts'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Only 5000 TSH/month',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Cancel anytime • No hidden fees',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.phone_android, color: Colors.blue.shade600, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          '📱 Download Mobile App',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'To access premium features with secure payments, download our mobile app:',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              // Replace with your actual Google Play Store URL when published
+                              const url = 'https://play.google.com/store/apps/details?id=com.example.smart_spend';
+                              if (await canLaunchUrl(Uri.parse(url))) {
+                                await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                              } else {
+                                // ignore: use_build_context_synchronously
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Could not open Google Play Store')),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.android, size: 16),
+                            label: const Text('Google Play'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              // Replace with your actual App Store URL when published
+                              // This opens App Store search for "Smart Spend"
+                              const url = 'https://apps.apple.com/us/search?term=Smart%20Spend';
+                              if (await canLaunchUrl(Uri.parse(url))) {
+                                await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                              } else {
+                                // ignore: use_build_context_synchronously
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Could not open App Store')),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.apple, size: 16),
+                            label: const Text('App Store'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline, color: Colors.orange.shade600, size: 16),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Try premium features now with demo mode - no payment required!',
+                        style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Maybe Later'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _enableDemoMode();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Try Demo Mode'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -858,13 +1118,34 @@ class SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ],
                   ),
-                  trailing: (!_isPremium && !kIsWeb)
+                  trailing: (!_isPremium)
                       ? ElevatedButton(
                           onPressed: _upgradePlan,
                           child: const Text('Upgrade'),
                         )
                       : null,
                 ),
+                // Add demo mode for testing
+                if (!_isPremium)
+                  ListTile(
+                    leading: const Icon(Icons.science),
+                    title: const Text('Demo Mode'),
+                    subtitle: const Text('Test premium features without payment'),
+                    trailing: ElevatedButton(
+                      onPressed: _enableDemoMode,
+                      child: const Text('Enable Demo'),
+                    ),
+                  ),
+                if (_isPremium && _activeSubscription?['payment_method_id'] == null)
+                  ListTile(
+                    leading: const Icon(Icons.science),
+                    title: const Text('Demo Mode Active'),
+                    subtitle: const Text('Currently in demo mode'),
+                    trailing: ElevatedButton(
+                      onPressed: _disableDemoMode,
+                      child: const Text('Disable Demo'),
+                    ),
+                  ),
                 const Divider(),
                 ListTile(
                   leading: const Icon(Icons.payment),
@@ -911,4 +1192,5 @@ class SettingsScreenState extends State<SettingsScreen> {
             ),
     );
   }
-} 
+}
+

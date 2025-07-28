@@ -123,7 +123,7 @@ class _TipsScreenState extends State<TipsScreen> {
     );
   }
 
-  void _toggleFavorite(String tip) {
+  void _toggleFavorite(String tip) async {
     setState(() {
       if (_favorites.contains(tip)) {
         _favorites.remove(tip);
@@ -131,7 +131,7 @@ class _TipsScreenState extends State<TipsScreen> {
         _favorites.add(tip);
       }
     });
-    _saveFavorites();
+    await _saveFavorites();
   }
 }
 
