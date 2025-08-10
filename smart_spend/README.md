@@ -10,7 +10,7 @@ Smart Spend helps students take control of their finances with ease. Track your 
 - 👛 **Dashboard**: See your balance, income, and expenses at a glance
 - 🏦 **Savings Goals**: Set and track your savings targets (free users: up to 5, premium: unlimited)
 - 📊 **Budgeting**: Create and manage budgets for different categories (free users: up to 5, premium: unlimited)
-- 💡 **Financial Tips**: Get smart advice tailored for students with favorite functionality
+- 💡 **Financial Tips**: Get smart advice tailored for students 
 - 📈 **Insights**: Visualize your spending and saving trends
 - 🔐 **Authentication**: Secure login and sign-up with Supabase
 - ⚙️ **Settings**: Manage your profile, preferences and premium subscriptions
@@ -18,7 +18,8 @@ Smart Spend helps students take control of their finances with ease. Track your 
 - 🌐 **Cross-Platform Support**: Works on web, Android, and iOS with platform-specific features
   
 ## 🌐 Live Demo & Pitch Deck
-- [Live Demo](https://smart-spend-4a8e71.netlify.app/)
+- [Live Demo](https://smart-spend-5ce225.netlify.app/)
+- [SmartSpend UI Demo](https://drive.google.com/file/d/198NAQHI2GrV_RKyn3W2xyhyFhQwoLOBn/view?usp=drive_web)
 - [Pitch Deck](https://www.canva.com/design/DAGoRO_1YTg/4dHndUmDcq7JHRx55GWkCg/edit?utm_content=DAGoRO_1YTg&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
 
 ## 🛠️ Tech Stack
@@ -98,8 +99,8 @@ smart_spend/
 ## 🔧 Recent Updates
 
 - ✅ **Splash Screen**: Professional welcome experience
-- ✅ **Favorite Tips**: Persistent favorites with error handling
 - ✅ **Enhanced Web UX**: Better payment dialog and demo mode
+- ✅ **Enhanced Web UI**:  Swipe-based navigation for smoother screen transitions and Floating action widget for quick access to savings and budget creation
 - ✅ **Cross-Platform Support**: Works on web, Android, and iOS
 - ✅ **Premium Gating**: Real limitations for free users
 - ✅ **Payment Integration**: Paystack integration for mobile

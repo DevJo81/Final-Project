@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'bottom_nav.dart';
 
 class InsightsScreen extends StatefulWidget {
-  const InsightsScreen({super.key});
+  final PageController? pageController;
+  const InsightsScreen({super.key, this.pageController});
 
   @override
   State<InsightsScreen> createState() => _InsightsScreenState();
@@ -74,12 +74,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
     return totals;
   }
 
-  int get _selectedIndex => 4;
-  void _onNavTap(BuildContext context, int index) {
-    final routes = ['/home', '/savings', '/budget', '/tips', '/insights'];
-    if (index != _selectedIndex) context.go(routes[index]);
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -97,7 +91,17 @@ class _InsightsScreenState extends State<InsightsScreen> {
         title: const Text('Spending Insights'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home'),
+          onPressed: () {
+            if (widget.pageController != null) {
+              widget.pageController!.animateToPage(
+                0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            } else {
+              context.go('/home');
+            }
+          },
         ),
       ),
       body: SingleChildScrollView(
@@ -182,7 +186,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
                       value: e.value,
                       title: e.key,
                       color: Colors.primaries[
-                        data.keys.toList().indexOf(e.key) % Colors.primaries.length],
+                          data.keys.toList().indexOf(e.key) % Colors.primaries.length],
                       radius: 40,
                     );
                   }).toList();
@@ -202,10 +206,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNav(
-        currentIndex: _selectedIndex,
-        onTap: (index) => _onNavTap(context, index),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.go('/transactions'),

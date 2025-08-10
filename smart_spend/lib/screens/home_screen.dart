@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'bottom_nav.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,7 +12,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? _userName;
   bool _loading = true;
-  int _selectedIndex = 0;
 
   double _totalIncome = 0;
   double _totalExpense = 0;
@@ -26,14 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
   double _budgetPercentUsed = 0;
   bool _budgetLoading = true;
   bool _transactionsLoading = true;
-
-  final List<String> _routes = [
-    '/home',
-    '/savings',
-    '/budget',
-    '/tips',
-    '/insights',
-  ];
 
   @override
   void initState() {
@@ -109,46 +99,27 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _budgetLoading = true);
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      setState(() {
-        _budgetTotal = 0;
-        _budgetSpent = 0;
-        _budgetRemaining = 0;
-        _budgetPercentUsed = 0;
-        _budgetLoading = false;
-      });
+      setState(() => _budgetLoading = false);
       return;
     }
     final response = await Supabase.instance.client
         .from('budgets')
         .select()
-        .eq('user_id', user.id)
-        .order('created_at');
-    final categories = (response as List)
-        .map((c) => {
-              'limit': (c['limit_amount'] as num).toDouble(),
-              'spent': (c['spent_amount'] as num).toDouble(),
-            })
+        .eq('user_id', user.id);
+    final budgets = (response as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
-    final totalBudget = categories.fold<double>(0, (sum, c) => sum + c['limit']!);
-    final totalSpent = categories.fold<double>(0, (sum, c) => sum + c['spent']!);
-    final totalRemaining = totalBudget - totalSpent;
-    final percentUsed = totalBudget > 0 ? (totalSpent / totalBudget).clamp(0, 1) : 0.0;
+    final total = budgets.fold<double>(0, (sum, b) => sum + (b['limit_amount'] as num).toDouble());
+    final spent = budgets.fold<double>(0, (sum, b) => sum + (b['spent_amount'] as num).toDouble());
+    final remaining = total - spent;
+    final percentUsed = total > 0 ? (spent / total).clamp(0, 1).toDouble() : 0.0;
     setState(() {
-      _budgetTotal = totalBudget;
-      _budgetSpent = totalSpent;
-      _budgetRemaining = totalRemaining;
-      _budgetPercentUsed = percentUsed.toDouble();
+      _budgetTotal = total;
+      _budgetSpent = spent;
+      _budgetRemaining = remaining;
+      _budgetPercentUsed = percentUsed;
       _budgetLoading = false;
     });
-  }
-
-  void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    if (_routes[index] != '/home') {
-      context.go(_routes[index]);
-    }
   }
 
   @override
@@ -158,8 +129,6 @@ class _HomeScreenState extends State<HomeScreen> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-    // ignore: unused_local_variable
-    final user = Supabase.instance.client.auth.currentUser;
 
     // Determine greeting based on time of day
     String getGreeting() {
@@ -204,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    ' $greeting, $displayName',
+                    '$greeting, $displayName',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 4),
@@ -342,10 +311,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-      bottomNavigationBar: BottomNav(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTap,
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.go('/transactions'),
         tooltip: 'Transactions',

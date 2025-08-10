@@ -4,10 +4,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+// ignore: unused_import
 import 'package:flutter_paystack/flutter_paystack.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
+// ignore: unused_import
 import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: unused_import
+import 'dart:io' show Platform;
 
 class SettingsScreen extends StatefulWidget {
   // ignore: use_super_parameters
@@ -256,77 +260,8 @@ class SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _upgradePlan() async {
-    // Remove web restriction to allow payments on web
-    // if (kIsWeb) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text('Payments are only available on mobile devices.')),
-    //   );
-    //   return;
-    // }
-    
-    if (kIsWeb) {
-      _showWebPaymentDialog();
-      return;
-    }
-    
-    final selectedId = await _selectPaymentMethodDialog();
-    if (selectedId == null) return;
-
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    // Fetch the selected payment method for email and display
-    // ignore: unused_local_variable
-    final method = _paymentMethods.firstWhere((m) => m['id'].toString() == selectedId);
-
-    // Set the amount (in kobo, e.g. 5000 NGN = 500000 kobo)
-    final int amountKobo = 500000; // TZS 5,000 or your price in kobo
-
-    // Prepare the charge
-    Charge charge = Charge()
-      ..amount = amountKobo
-      ..email = _email // or user.email
-      ..reference = 'SSUBS_${DateTime.now().millisecondsSinceEpoch}'
-      ..currency = 'NGN'; // Change to your currency if supported
-
-    final plugin = PaystackPlugin();
-    CheckoutResponse response = await plugin.checkout(
-      // ignore: use_build_context_synchronously
-      context,
-      method: CheckoutMethod.card, // or .selectable for card/mobile
-      charge: charge,
-      fullscreen: false,
-      // logo: Image.asset('assets/logo.png', width: 48), // Optional: your app logo
-    );
-
-    if (response.status == true) {
-      // Payment successful: create subscription in Supabase
-      await Supabase.instance.client.from('subscriptions').insert({
-        'user_id': user.id,
-        'payment_method_id': selectedId,
-        'plan': 'Premium',
-        'status': 'active',
-        'started_at': DateTime.now().toUtc().toIso8601String(),
-      });
-
-      await _fetchActiveSubscription();
-
-      setState(() {
-        _plan = 'Premium';
-        _isPremium = true;
-      });
-
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upgraded to Premium!')),
-      );
-    } else {
-      // Payment failed or cancelled
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Payment failed:  2${response.message}')),
-      );
-    }
+    // Always show web payment dialog
+    _showWebPaymentDialog();
   }
 
   // ignore: unused_element
@@ -878,7 +813,8 @@ class SettingsScreenState extends State<SettingsScreen> {
   void _showWebPaymentDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Upgrade to Premium'),
         content: SingleChildScrollView(
           child: Column(
@@ -964,7 +900,7 @@ class SettingsScreenState extends State<SettingsScreen> {
                                 await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
                               } else {
                                 // ignore: use_build_context_synchronously
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                ScaffoldMessenger.of(dialogContext).showSnackBar(
                                   const SnackBar(content: Text('Could not open Google Play Store')),
                                 );
                               }
@@ -988,7 +924,7 @@ class SettingsScreenState extends State<SettingsScreen> {
                                 await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
                               } else {
                                 // ignore: use_build_context_synchronously
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                ScaffoldMessenger.of(dialogContext).showSnackBar(
                                   const SnackBar(content: Text('Could not open App Store')),
                                 );
                               }
@@ -1031,12 +967,12 @@ class SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Maybe Later'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               _enableDemoMode();
             },
             style: ElevatedButton.styleFrom(
