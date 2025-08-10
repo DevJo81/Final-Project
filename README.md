@@ -19,7 +19,7 @@ Smart Spend helps students take control of their finances with ease. Track your 
   
 ## 🌐 Live Demo & Pitch Deck
 - [Live Demo](https://smart-spend-5ce225.netlify.app/)
-[SmartSpend UI Demo](https://drive.google.com/file/d/198NAQHI2GrV_RKyn3W2xyhyFhQwoLOBn/view?usp=drive_web)
+- [SmartSpend UI Demo](https://drive.google.com/file/d/198NAQHI2GrV_RKyn3W2xyhyFhQwoLOBn/view?usp=drive_web)
 - [Pitch Deck](https://www.canva.com/design/DAGoRO_1YTg/4dHndUmDcq7JHRx55GWkCg/edit?utm_content=DAGoRO_1YTg&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
 
 ## 🛠️ Tech Stack
